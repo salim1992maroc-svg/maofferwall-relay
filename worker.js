@@ -7,10 +7,10 @@ export default {
     const url = new URL(request.url);
     const q = url.searchParams;
 
-    const userId = q.get("user") || "";
-    const tx = q.get("tx") || "";
-    const amount = q.get("amount") || "";
-    const sig = q.get("sig") || "";
+    const userId = q.get("userId") || q.get("user") || "";
+    const tx = q.get("transactionId") || q.get("tx") || "";
+    const amount = q.get("currencyAmount") || q.get("amount") || "";
+    const sig = q.get("signature") || q.get("sig") || "";
 
     if (!userId || !tx || !amount || !sig) {
       return new Response("Missing required fields", { status: 400 });
@@ -43,15 +43,17 @@ export default {
     const forward = new URL(env.APP_WEBHOOK_URL);
 
     const fields = [
-      "user",
-      "tx",
-      "amount",
-      "offer",
+      "userId",
+      "transactionId",
+      "currencyAmount",
+      "currencyName",
       "offerId",
+      "offerName",
       "goalId",
       "payoutUsd",
       "status",
-      "test"
+      "test",
+      "timestamp"
     ];
 
     for (const field of fields) {
