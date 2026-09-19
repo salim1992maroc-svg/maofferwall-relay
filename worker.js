@@ -7,15 +7,18 @@ export default {
     const url = new URL(request.url);
     const q = url.searchParams;
 
-    const userId = q.get("userId") || q.get("user") || "";
-    const tx = q.get("transactionId") || q.get("tx") || "";
-    const amount = q.get("currencyAmount") || q.get("amount") || "";
-    const sig = q.get("signature") || q.get("sig") || "";
+    // Offerwall.GG sends these names according to the configured postback URL.
+    const userId = q.get("user") || q.get("userId") || "";
+    const tx = q.get("tx") || q.get("transactionId") || "";
+    const amount = q.get("amount") || q.get("currencyAmount") || "";
+    const sig = q.get("sig") || q.get("signature") || "";
 
     if (!userId || !tx || !amount || !sig) {
       return new Response("Missing required fields", { status: 400 });
     }
 
+    // Offerwall.GG signature:
+    // HMAC-SHA256(userId:transactionId:currencyAmount)
     const message = `${userId}:${tx}:${amount}`;
 
     const key = await crypto.subtle.importKey(
@@ -40,13 +43,22 @@ export default {
       return new Response("invalid signature", { status: 403 });
     }
 
+    // Forward to the Whacka webhook using the canonical field names.
     const forward = new URL(env.APP_WEBHOOK_URL);
 
+    forward.searchParams.set("userId", userId);
+    forward.searchParams.set("transactionId", tx);
+    forward.searchParams.set("currencyAmount", amount);
+
+    // Offerwall.GG uses Coins as the currency.
+    const currencyName = q.get("currencyName");
+    if (currencyName !== null && currencyName !== "") {
+      forward.searchParams.set("currencyName", currencyName);
+    } else {
+      forward.searchParams.set("currencyName", "Coins");
+    }
+
     const fields = [
-      "userId",
-      "transactionId",
-      "currencyAmount",
-      "currencyName",
       "offerId",
       "offerName",
       "goalId",
